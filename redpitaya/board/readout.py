@@ -15,6 +15,7 @@ import signal
 import sys
 import time
 from wire import MAGIC4, EVENT4, frame, json_frame
+import tmp451
 
 BASE = 0x40700000
 FLAGS = {0: "near_full_scale", 1: "possible_pileup", 2: "invalid_cfd",
@@ -94,6 +95,8 @@ def main():
     parser.add_argument("--batch-ms", type=float, default=100,
                         help="Target batching interval; FIFO is still drained every ~1 ms")
     parser.add_argument("--output", help="New output file; default standard output")
+    parser.add_argument("--temperature-bus", type=int, default=0, help="I2C bus of the detector TMP451; -1 disables")
+    parser.add_argument("--temperature-address", type=lambda s: int(s, 0), default=0x4c)
     parser.add_argument("--custom-bitstream-loaded", action="store_true", required=True,
                         help="Explicitly confirm that this project's custom MCA4 image is loaded")
     args = parser.parse_args()
@@ -126,6 +129,7 @@ def main():
     for sig in (signal.SIGINT, signal.SIGTERM):
         previous_handlers[sig] = signal.signal(sig, stop)
     pending = bytearray()
+    thermometer = None if args.temperature_bus < 0 else tmp451.Monitor(args.temperature_bus, args.temperature_address)
     if binary:
         output.write(MAGIC4)
     def emit(row):
@@ -211,6 +215,9 @@ def main():
                 flush_events()
                 status = snapshot()
                 status.update(type="status", read_events=count)
+                if thermometer:
+                    # Read every 2 s; each status row carries the latest value beside its FPGA clock.
+                    status["temperature"] = thermometer.poll(now)
                 emit(status)
                 output.flush()
                 next_batch += args.batch_ms / 1000

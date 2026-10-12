@@ -18,15 +18,26 @@
       <article><div class="label">ACCEPTED EVENTS</div><div class="metric" id="accepted">—</div><div class="hint">Since acquisition started</div></article>
       <article><div class="label">FLAGGED EVENTS</div><div class="metric" id="rejected">—</div><div class="hint">Excluded from plots</div></article>
       <article><div class="label">FIFO DROPS</div><div class="metric" id="drops">—</div><div class="hint">Reported by the FPGA</div></article>
+      <article><div class="label">DETECTOR TEMPERATURE</div><div class="metric"><span id="temperature">—</span><small>°C</small></div><div class="hint" id="temperature-note">TMP451 over I2C</div></article>
     </section>
     <section class="channels-section" aria-label="Channel selection">
       <div><h2>Inputs</h2><p>Select channels to show in both plots.</p></div>
       <div id="channels" class="channels"></div>
     </section>
     <section class="panel">
-      <div class="panel-head"><div><h2>Integral spectrum</h2><p>Accepted pulse integrals · accumulated this run</p></div><div class="controls"><label><input type="checkbox" id="log-scale"> Log counts</label><a class="button" href="/api/spectrum.csv" download>Export CSV ↗</a></div></div>
+      <div class="panel-head"><div><h2>Integral spectrum</h2><p>Accepted pulse integrals · accumulated this run</p></div><div class="controls"><label>Axis <select id="axis-unit"><option value="adc">ADC counts × samples</option><option value="vus">V·µs</option></select></label><label><input type="checkbox" id="log-scale"> Log counts</label><button type="button" class="button" id="pick-region">Select peak region</button><button type="button" class="button" id="fit-data">Fit data</button><button type="button" class="button" id="reset-zoom">Reset zoom</button><a class="button" href="/api/spectrum.csv" download>Export CSV ↗</a></div></div>
       <div class="plot"><canvas id="spectrum" aria-label="Long-gate integral histogram for selected inputs" role="img"></canvas></div>
-      <div class="panel-foot"><span>Long-gate integral (nominal V·µs)</span><span id="range-note">256 bins · 0–25 V·µs</span></div>
+      <div class="panel-foot"><span>Long-gate integral (<span class="unit-name">ADC counts × samples</span>) · drag to zoom, scroll to zoom at cursor, shift-drag to pan, double-click to reset</span><span id="cursor-note"></span><span id="range-note">256 bins · 0–25 V·µs</span></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Pulse shape</h2><p>Short / long integral ratio against long integral · accepted events · same horizontal range as the spectrum</p></div><div class="controls"><button type="button" class="button" id="shape-reset">Reset ratio range</button></div></div>
+      <div class="plot shape-plot"><canvas id="shape-chart" aria-label="Pulse shape ratio against long-gate integral" role="img"></canvas></div>
+      <div class="panel-foot"><span>Long-gate integral (<span class="unit-name">ADC counts × samples</span>) · drag up or down to zoom the ratio axis, scroll to zoom, double-click to reset</span><span id="shape-note"></span></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Gain tracking</h2><p id="gain-summary">Press Select peak region, then drag across a peak in the spectrum.</p></div><div class="controls"><label>Time bin <select id="gain-bin"><option value="0">Auto</option><option value="1">10 s</option><option value="3">30 s</option><option value="6">1 min</option><option value="30">5 min</option><option value="180">30 min</option></select></label><button type="button" class="button" id="clear-region">Clear region</button><a class="button" id="gain-csv" href="#" download>Export CSV ↗</a></div></div>
+      <div class="plot rate-plot"><canvas id="gain-chart" aria-label="Peak centroid change and detector temperature over time" role="img"></canvas></div>
+      <div class="panel-foot"><span>Elapsed time (s) · coloured points: peak centroid change (%) · grey line: detector temperature (°C, right axis)</span><span id="gain-note"></span></div>
     </section>
     <section class="panel">
       <div class="panel-head"><div><h2>Count rate</h2><p>Accepted events per second · latest two minutes</p></div><span class="tag">LIVE / 0.5 s refresh</span></div>

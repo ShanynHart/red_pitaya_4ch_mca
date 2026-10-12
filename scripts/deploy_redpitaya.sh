@@ -19,7 +19,7 @@ TASK_OPTIONS=(-i "$TASK_AUTH/id_ed25519" -o IdentitiesOnly=yes -o BatchMode=yes
   -o "HostKeyAlias=${REDPITAYA_HOST_KEY_ALIAS:-rp-f0d343.local}" -o ConnectTimeout=8)
 ssh "${TASK_OPTIONS[@]}" -p "$TASK_PORT" "root@$TASK_HOST" 'mkdir -p /root/mca-fpga'
 scp "${TASK_OPTIONS[@]}" -P "$TASK_PORT" "$TASK_BINARY" "root@$TASK_HOST:/root/mca-fpga/red_pitaya.bin"
-scp "${TASK_OPTIONS[@]}" -P "$TASK_PORT" redpitaya/board/{readout.py,wire.py,load.sh,restore.sh,run.sh,stop.sh} "root@$TASK_HOST:/root/mca-fpga/"
+scp "${TASK_OPTIONS[@]}" -P "$TASK_PORT" redpitaya/board/{readout.py,wire.py,tmp451.py,load.sh,restore.sh,run.sh,stop.sh} "root@$TASK_HOST:/root/mca-fpga/"
 printf '%s\n' "$TASK_SHA" | ssh "${TASK_OPTIONS[@]}" -p "$TASK_PORT" "root@$TASK_HOST" \
   'cat > /root/mca-fpga/expected_sha256; chmod 755 /root/mca-fpga/*.sh; cd /root/mca-fpga; sha256sum red_pitaya.bin'
 echo 'Reviewed MCA files uploaded. FPGA and boot selection unchanged.'

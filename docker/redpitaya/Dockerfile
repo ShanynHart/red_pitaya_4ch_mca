@@ -6,5 +6,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssh-client 
 COPY redpitaya/reader.py /opt/redpitaya/reader.py
 COPY redpitaya/dashboard.py /opt/redpitaya/dashboard.py
 COPY redpitaya/web/ /opt/redpitaya/web/
-COPY redpitaya/board/readout.py redpitaya/board/wire.py /opt/redpitaya/board/
+COPY redpitaya/board/readout.py redpitaya/board/wire.py redpitaya/board/tmp451.py /opt/redpitaya/board/
 CMD ["python3", "/opt/redpitaya/reader.py"]
