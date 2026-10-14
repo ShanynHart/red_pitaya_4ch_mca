@@ -26,7 +26,8 @@ class Dashboard:
         self.recording = str(recording) if recording else None
         self.channels = {c: dict(channel=c, accepted=0, rejected=0, cps=0,
                                  live_fraction=0, histogram=[0] * bins,
-                                 underflow=0, overflow=0, history=deque(maxlen=1200))
+                                 underflow=0, overflow=0, clipped=0, scale_sum=0.0, scale_n=0,
+                                 baseline_sum=0.0, history=deque(maxlen=1200))
                          for c in channels}
         self.origin = None
         self.server = None
@@ -45,6 +46,8 @@ class Dashboard:
             accepted = 0
             kept = array("f")
             for words in records:
+                if (words[2] >> 16) & 1:  # near_full_scale: the pulse reached the ADC limit
+                    row["clipped"] += 1
                 if (words[2] >> 16) & reject_flags:
                     row["rejected"] += 1
                     continue
@@ -52,6 +55,14 @@ class Dashboard:
                 raw = words[4]
                 integral = (raw - (1 << 32) if raw & (1 << 31) else raw) * .008 / 8192
                 kept.append(integral)
+                # Integral per ADC count of amplitude, from clear pulses: scales the
+                # ADC full scale to the largest integral an unclipped pulse can have.
+                baseline = (words[5] & 0xffff) - (1 << 16) if words[5] & 0x8000 else words[5] & 0xffff
+                amplitude = (words[5] >> 16) - baseline
+                if amplitude >= 1000 and integral > 0:
+                    row["scale_sum"] += integral / amplitude
+                    row["scale_n"] += 1
+                    row["baseline_sum"] += baseline
                 if raw and 0 <= integral < self.maximum:
                     short = words[3] - (1 << 32) if words[3] & (1 << 31) else words[3]
                     ratio = short / (raw - (1 << 32) if raw & (1 << 31) else raw)
@@ -91,7 +102,8 @@ class Dashboard:
                 return
             self.channels = {c: dict(channel=c, accepted=0, rejected=0, cps=0,
                                      live_fraction=0, histogram=[0] * self.bins,
-                                     underflow=0, overflow=0, history=deque(maxlen=1200))
+                                     underflow=0, overflow=0, clipped=0, scale_sum=0.0, scale_n=0,
+                                 baseline_sum=0.0, history=deque(maxlen=1200))
                              for c in channels}
             self.slices, self.temperatures, self.stored = {c: {} for c in channels}, {}, 0
             self.shapes = {c: {} for c in channels}
@@ -121,8 +133,15 @@ class Dashboard:
                         histogram_max=self.maximum, histogram_bins=self.bins,
                         status=self.status,
                         channels=[dict(row, history=list(row["history"]),
-                                       histogram=list(row["histogram"]))
+                                       histogram=list(row["histogram"]), full_scale=self.full_scale(row))
                                   for row in self.channels.values()])
+
+    @staticmethod
+    def full_scale(row, top=8191):
+        """Estimated long integral (V us) of a pulse that just reaches the ADC limit."""
+        if row["scale_n"] < 20:
+            return None
+        return row["scale_sum"] / row["scale_n"] * (top - row["baseline_sum"] / row["scale_n"])
 
     @staticmethod
     def _sums(entry, latest):
@@ -178,14 +197,15 @@ class Dashboard:
                 channels.append(dict(channel=channel, rows=rows))
             return dict(low=low, high=high, bin_s=merge * self.slice_s, channels=channels)
 
-    def shape(self, low, high, ratio_low, ratio_high, columns=240, rows=120):
+    def shape(self, low, high, ratio_low, ratio_high, columns=400, rows=160):
         """Counts on a columns x rows grid of long integral against short/long ratio."""
         with self.lock:
             channels = []
             for channel, cells in self.shapes.items():
                 grid = {}
                 for key, count in cells.items():
-                    x, y = (key >> 10) * self.shape_x, (key & 1023) * self.shape_y
+                    # Place each fine cell by its centre so re-binning is not biased low.
+                    x, y = ((key >> 10) + .5) * self.shape_x, ((key & 1023) + .5) * self.shape_y
                     if low <= x < high and ratio_low <= y < ratio_high:
                         cell = (int((x - low) / (high - low) * columns), int((y - ratio_low) / (ratio_high - ratio_low) * rows))
                         grid[cell] = grid.get(cell, 0) + count
@@ -224,12 +244,14 @@ class Dashboard:
                     try:
                         asked = parse_qs(query)
                         box = [float(asked[name][0]) for name in ("low", "high", "ratio_low", "ratio_high")]
-                        if not (all(math.isfinite(v) for v in box) and box[0] < box[1] and box[2] < box[3]):
+                        grid = [int(asked.get(name, [default])[0]) for name, default in (("columns", "400"), ("rows", "160"))]
+                        if not (all(math.isfinite(v) for v in box) and box[0] < box[1] and box[2] < box[3]
+                                and all(1 <= v <= 1000 for v in grid)):
                             raise ValueError
                     except (KeyError, ValueError):
                         self.send_error(400)
                         return
-                    body = json.dumps(dashboard.shape(*box), allow_nan=False).encode()
+                    body = json.dumps(dashboard.shape(*box, *grid), allow_nan=False).encode()
                     mime = "application/json"
                 elif route == "/api/gain":
                     body = json.dumps(dashboard.gain(low, high, merge), allow_nan=False).encode()

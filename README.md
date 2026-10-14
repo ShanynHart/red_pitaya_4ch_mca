@@ -74,6 +74,11 @@ Rates use elapsed FPGA time and are not dead-time corrected. Integrals are in
 nominal V·µs, not calibrated keV. The dashboard is read-only; use the start/stop
 scripts to control acquisition. Stopping also stops the UI.
 
+To try the dashboard without a board, stream simulated LaBr3:Ce data (Cs-137,
+La-138 internal lines, internal alphas, a temperature cycle and its gain drift):
+
+    bash scripts/simulate_dashboard.sh --channels 2          # add --bias 30 to see clipping
+
 `REDPITAYA_UI_PORT` changes the port (default `8080`; `0` disables the UI).
 The default bind address is loopback. Set `REDPITAYA_UI_BIND=0.0.0.0` to allow
 other computers on your network to open `http://<receiver-ip>:8080`.

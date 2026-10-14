@@ -225,7 +225,8 @@ def main():
     dashboard = None
     if args.ui_port:
         from dashboard import Dashboard
-        dashboard = Dashboard(args.channels, recording=args.record)
+        # Spectrum range in nominal V us; 4 covers LaBr3 at full scale with room for slower scintillators.
+        dashboard = Dashboard(args.channels, recording=args.record, maximum=float(os.getenv("REDPITAYA_UI_MAX_VUS", "4")))
     import rclpy
     from rclpy.node import Node
     from std_msgs.msg import String, UInt8MultiArray, UInt32

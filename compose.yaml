@@ -22,6 +22,7 @@ services:
       REDPITAYA_RECORD: ${REDPITAYA_RECORD:-}
       REDPITAYA_UI_PORT: ${REDPITAYA_UI_PORT:-8080}
       REDPITAYA_UI_BIND: ${REDPITAYA_UI_BIND:-127.0.0.1}
+      REDPITAYA_UI_MAX_VUS: ${REDPITAYA_UI_MAX_VUS:-4}
     volumes:
       - ./redpitaya/runtime:/auth:ro
       - ./redpitaya/captures:/captures

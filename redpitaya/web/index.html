@@ -17,6 +17,7 @@
       <article><div class="label">ACCEPTED RATE</div><div class="metric"><span id="rate">—</span><small>counts/s</small></div><div class="hint">Per elapsed FPGA time</div></article>
       <article><div class="label">ACCEPTED EVENTS</div><div class="metric" id="accepted">—</div><div class="hint">Since acquisition started</div></article>
       <article><div class="label">FLAGGED EVENTS</div><div class="metric" id="rejected">—</div><div class="hint">Excluded from plots</div></article>
+      <article id="clipped-card"><div class="label">CLIPPED PULSES</div><div class="metric" id="clipped">—</div><div class="hint" id="clipped-note">Reached the ADC limit</div></article>
       <article><div class="label">FIFO DROPS</div><div class="metric" id="drops">—</div><div class="hint">Reported by the FPGA</div></article>
       <article><div class="label">DETECTOR TEMPERATURE</div><div class="metric"><span id="temperature">—</span><small>°C</small></div><div class="hint" id="temperature-note">TMP451 over I2C</div></article>
     </section>
@@ -25,14 +26,24 @@
       <div id="channels" class="channels"></div>
     </section>
     <section class="panel">
-      <div class="panel-head"><div><h2>Integral spectrum</h2><p>Accepted pulse integrals · accumulated this run</p></div><div class="controls"><label>Axis <select id="axis-unit"><option value="adc">ADC counts × samples</option><option value="vus">V·µs</option></select></label><label><input type="checkbox" id="log-scale"> Log counts</label><button type="button" class="button" id="pick-region">Select peak region</button><button type="button" class="button" id="fit-data">Fit data</button><button type="button" class="button" id="reset-zoom">Reset zoom</button><a class="button" href="/api/spectrum.csv" download>Export CSV ↗</a></div></div>
+      <div class="panel-head"><div><h2>Integral spectrum</h2><p>Accepted pulse integrals · accumulated this run</p></div><div class="controls"><label>Axis <select id="axis-unit"><option value="adc">ADC counts × samples</option><option value="vus">V·µs</option><option value="kev">Energy (keV)</option></select></label><label><input type="checkbox" id="log-scale"> Log counts</label><button type="button" class="button" id="pick-region">Select peak region</button><button type="button" class="button" id="fit-data">Fit data</button><button type="button" class="button" id="reset-zoom">Reset zoom</button><a class="button" href="/api/spectrum.csv" download>Export CSV ↗</a></div></div>
       <div class="plot"><canvas id="spectrum" aria-label="Long-gate integral histogram for selected inputs" role="img"></canvas></div>
+      <div class="fit-note" id="fit-note"></div>
       <div class="panel-foot"><span>Long-gate integral (<span class="unit-name">ADC counts × samples</span>) · drag to zoom, scroll to zoom at cursor, shift-drag to pan, double-click to reset</span><span id="cursor-note"></span><span id="range-note">256 bins · 0–25 V·µs</span></div>
     </section>
     <section class="panel">
-      <div class="panel-head"><div><h2>Pulse shape</h2><p>Short / long integral ratio against long integral · accepted events · same horizontal range as the spectrum</p></div><div class="controls"><button type="button" class="button" id="shape-reset">Reset ratio range</button></div></div>
-      <div class="plot shape-plot"><canvas id="shape-chart" aria-label="Pulse shape ratio against long-gate integral" role="img"></canvas></div>
-      <div class="panel-foot"><span>Long-gate integral (<span class="unit-name">ADC counts × samples</span>) · drag up or down to zoom the ratio axis, scroll to zoom, double-click to reset</span><span id="shape-note"></span></div>
+      <div class="panel-head"><div><h2>Energy calibration</h2><p id="cal-summary"></p></div><div class="controls"><label>Energy <input type="number" id="cal-energy" min="0" step="0.1" list="cal-lines" placeholder="keV"></label><datalist id="cal-lines"><option value="35">Ba K X-ray (La-138)</option><option value="59.5">Am-241</option><option value="121.8">Eu-152</option><option value="344.3">Eu-152</option><option value="511">Annihilation</option><option value="661.7">Cs-137</option><option value="1173.2">Co-60</option><option value="1332.5">Co-60</option><option value="1460.8">K-40</option><option value="1468">La-138 1436 keV + Ba K X-ray</option><option value="2614.5">Tl-208</option></datalist><button type="button" class="button" id="cal-add">Add fitted peak</button><label>Order <select id="cal-order"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option></select></label><button type="button" class="button" id="cal-clear">Clear points</button><button type="button" class="button" id="cal-export">Export ↗</button></div></div>
+      <div class="cal-table" id="cal-table"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Pulse shape</h2><p>Short / long integral ratio against long integral · accepted events · same horizontal range as the spectrum</p></div><div class="controls"><button type="button" class="button" id="shape-clear-gate">Clear gate</button><button type="button" class="button" id="shape-reset">Reset ratio range</button></div></div>
+      <div class="shape-grid">
+        <canvas id="shape-y" aria-label="Ratio projection of events inside the gate's integral range" role="img"></canvas>
+        <canvas id="shape-chart" aria-label="Pulse shape ratio against long-gate integral" role="img"></canvas>
+        <div></div>
+        <canvas id="shape-x" aria-label="Integral projection of events inside the gate's ratio range" role="img"></canvas>
+      </div>
+      <div class="panel-foot"><span>Drag a box on the map to set a gate · left: ratio projection inside the gate's integral range · below: spectrum inside the gate's ratio range · scroll to zoom the ratio axis · double-click to clear</span><span id="shape-note"></span></div>
     </section>
     <section class="panel">
       <div class="panel-head"><div><h2>Gain tracking</h2><p id="gain-summary">Press Select peak region, then drag across a peak in the spectrum.</p></div><div class="controls"><label>Time bin <select id="gain-bin"><option value="0">Auto</option><option value="1">10 s</option><option value="3">30 s</option><option value="6">1 min</option><option value="30">5 min</option><option value="180">30 min</option></select></label><button type="button" class="button" id="clear-region">Clear region</button><a class="button" id="gain-csv" href="#" download>Export CSV ↗</a></div></div>
