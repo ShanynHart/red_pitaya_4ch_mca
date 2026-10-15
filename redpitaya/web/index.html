@@ -9,20 +9,20 @@
 </head>
 <body>
   <main>
-    <header>
-      <div><div class="eyebrow">RED PITAYA / FOUR-CHANNEL MCA</div><h1>Live acquisition<span class="dot">.</span></h1></div>
-      <div id="connection" class="connection" role="status">Connecting…</div>
+    <header class="topbar">
+      <div class="crumbs"><span class="logo" aria-hidden="true"></span><span>Dashboards</span><span class="sep">/</span><span>Red Pitaya</span><span class="sep">/</span><h1>Four-channel MCA</h1></div>
+      <div class="top-right"><span class="tag" id="updated">Waiting for data</span><span class="tag">Refresh 0.5 s</span><div id="connection" class="connection" role="status">Connecting…</div></div>
     </header>
     <section class="metrics" aria-label="Acquisition summary">
-      <article><div class="label">ACCEPTED RATE</div><div class="metric"><span id="rate">—</span><small>counts/s</small></div><div class="hint">Per elapsed FPGA time</div></article>
-      <article><div class="label">ACCEPTED EVENTS</div><div class="metric" id="accepted">—</div><div class="hint">Since acquisition started</div></article>
-      <article><div class="label">FLAGGED EVENTS</div><div class="metric" id="rejected">—</div><div class="hint">Excluded from plots</div></article>
-      <article id="clipped-card"><div class="label">CLIPPED PULSES</div><div class="metric" id="clipped">—</div><div class="hint" id="clipped-note">Reached the ADC limit</div></article>
-      <article><div class="label">FIFO DROPS</div><div class="metric" id="drops">—</div><div class="hint">Reported by the FPGA</div></article>
-      <article><div class="label">DETECTOR TEMPERATURE</div><div class="metric"><span id="temperature">—</span><small>°C</small></div><div class="hint" id="temperature-note">TMP451 over I2C</div></article>
+      <article><div class="label">Accepted rate</div><div class="metric good"><span id="rate">—</span><small>counts/s</small></div><div class="hint">Per elapsed FPGA time</div><canvas class="spark" id="rate-spark" aria-hidden="true"></canvas></article>
+      <article><div class="label">Accepted events</div><div class="metric blue" id="accepted">—</div><div class="hint">Since acquisition started</div></article>
+      <article><div class="label">Flagged events</div><div class="metric" id="rejected">—</div><div class="hint">Excluded from plots</div></article>
+      <article id="clipped-card"><div class="label">Clipped pulses</div><div class="metric good" id="clipped">—</div><div class="hint" id="clipped-note">Reached the ADC limit</div></article>
+      <article id="drops-card"><div class="label">FIFO drops</div><div class="metric good" id="drops">—</div><div class="hint">Reported by the FPGA</div></article>
+      <article><div class="label">Detector temperature</div><div class="metric orange"><span id="temperature">—</span><small>°C</small></div><div class="hint" id="temperature-note">TMP451 over I2C</div><canvas class="spark" id="temperature-spark" aria-hidden="true"></canvas></article>
     </section>
     <section class="channels-section" aria-label="Channel selection">
-      <div><h2>Inputs</h2><p>Select channels to show in both plots.</p></div>
+      <div class="variable"><span class="variable-label">Inputs</span></div>
       <div id="channels" class="channels"></div>
     </section>
     <section class="panel">
@@ -45,6 +45,7 @@
       </div>
       <div class="panel-foot"><span>Drag a box on the map to set a gate · left: ratio projection inside the gate's integral range · below: spectrum inside the gate's ratio range · scroll to zoom the ratio axis · double-click to clear</span><span id="shape-note"></span></div>
     </section>
+    <div class="row">
     <section class="panel">
       <div class="panel-head"><div><h2>Gain tracking</h2><p id="gain-summary">Press Select peak region, then drag across a peak in the spectrum.</p></div><div class="controls"><label>Time bin <select id="gain-bin"><option value="0">Auto</option><option value="1">10 s</option><option value="3">30 s</option><option value="6">1 min</option><option value="30">5 min</option><option value="180">30 min</option></select></label><button type="button" class="button" id="clear-region">Clear region</button><a class="button" id="gain-csv" href="#" download>Export CSV ↗</a></div></div>
       <div class="plot rate-plot"><canvas id="gain-chart" aria-label="Peak centroid change and detector temperature over time" role="img"></canvas></div>
@@ -55,6 +56,7 @@
       <div class="plot rate-plot"><canvas id="rate-chart" aria-label="Accepted count rate over time for selected inputs" role="img"></canvas></div>
       <div class="panel-foot"><span>Time before latest batch (s)</span><span>Elapsed-time rate · no dead-time correction</span></div>
     </section>
+    </div>
     <footer><span id="run-info">Waiting for the first acquisition batch.</span><span>Integral spectra are not calibrated energy spectra.</span></footer>
   </main>
 </body>

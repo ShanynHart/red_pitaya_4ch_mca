@@ -1,6 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const colors = ['#087e86', '#d47b35', '#7961b5', '#bd4c70'];
+const colors = ['#73bf69', '#f2cc0c', '#5794f2', '#ff9830'];  // Grafana classic palette
+const GRID = 'rgba(204,204,220,0.08)', TICK = '#8e8e8e', TITLE = '#ccccdc';
 const selected = new Set([1, 2, 3, 4]);
 const number = value => Number(value).toLocaleString(undefined, {maximumFractionDigits: 1});
 let state = null;
@@ -56,7 +57,7 @@ let fits = {};       // Gaussian + line fits in the peak region, by channel
 
 // Axis titles: below the tick labels, and rotated beside the left (and optional right) scale.
 function axisTitles(ctx, pad, w, h, bottom, left, right) {
-  ctx.save(); ctx.fillStyle = '#172c3a'; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.save(); ctx.fillStyle = TITLE; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(bottom, pad.left + w / 2, pad.top + h + 42);
   ctx.save(); ctx.translate(14, pad.top + h / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(left, 0, 0); ctx.restore();
   if (right) { ctx.translate(pad.left + w + pad.right - 10, pad.top + h / 2); ctx.rotate(Math.PI / 2); ctx.fillText(right, 0, 0); }
@@ -80,9 +81,9 @@ function chart(canvas, xmax, ymax, xlabel, logarithmic = false, xmin = 0, marks 
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const sy = pad.top + h * (1 - i / 4);
-    ctx.strokeStyle = '#e9eff0'; ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + w, sy); ctx.stroke();
+    ctx.strokeStyle = GRID; ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + w, sy); ctx.stroke();
     const value = logarithmic ? Math.pow(10, top * i / 4) - 1 : top * i / 4;
-    ctx.fillStyle = '#627580'; ctx.textAlign = 'right'; ctx.fillText(number(value), pad.left - 10, sy + 4);
+    ctx.fillStyle = TICK; ctx.textAlign = 'right'; ctx.fillText(number(value), pad.left - 10, sy + 4);
   }
   for (const mark of marks || Array.from({length: 6}, (_, i) => ({x: xmin + (xmax - xmin) * i / 5, label: xlabel(xmin + (xmax - xmin) * i / 5)}))) {
     const px = x(mark.x);
@@ -133,14 +134,14 @@ function draw() {
   });
   if (region) {
     const {ctx, x} = spectrum, a = Math.max(spectrum.pad.left, x(region[0])), b = Math.min(spectrum.pad.left + spectrum.w, x(region[1]));
-    if (b > a) { ctx.fillStyle = 'rgba(212,123,53,.16)'; ctx.fillRect(a, spectrum.pad.top, b - a, spectrum.h); ctx.strokeStyle = '#d47b35'; ctx.lineWidth = 1; ctx.strokeRect(a, spectrum.pad.top, b - a, spectrum.h); }
+    if (b > a) { ctx.fillStyle = 'rgba(255,152,48,.14)'; ctx.fillRect(a, spectrum.pad.top, b - a, spectrum.h); ctx.strokeStyle = '#ff9830'; ctx.lineWidth = 1; ctx.strokeRect(a, spectrum.pad.top, b - a, spectrum.h); }
   }
   for (const row of rows) {
     // Mark where this channel's pulses start to clip.
     if (!row.full_scale || row.full_scale < lo || row.full_scale > hi) continue;
     const {ctx, x} = spectrum, px = x(row.full_scale);
-    ctx.save(); ctx.strokeStyle = '#bd4c70'; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(px, spectrum.pad.top); ctx.lineTo(px, spectrum.pad.top + spectrum.h); ctx.stroke();
-    ctx.fillStyle = '#bd4c70'; ctx.textAlign = 'right'; ctx.fillText(`IN${row.channel} ADC full scale`, px - 6, spectrum.pad.top + 12); ctx.restore();
+    ctx.save(); ctx.strokeStyle = '#f2495c'; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(px, spectrum.pad.top); ctx.lineTo(px, spectrum.pad.top + spectrum.h); ctx.stroke();
+    ctx.fillStyle = '#f2495c'; ctx.textAlign = 'right'; ctx.fillText(`IN${row.channel} ADC full scale`, px - 6, spectrum.pad.top + 12); ctx.restore();
   }
   rows.forEach((row, n) => {
     const fit = fits[row.channel];
@@ -148,7 +149,7 @@ function draw() {
     const {ctx, x, y} = spectrum, bins = geometry.group;
     ctx.save(); ctx.beginPath(); ctx.rect(spectrum.pad.left, 0, spectrum.w, spectrum.pad.top + spectrum.h + 1); ctx.clip();
     for (const [part, style] of [[fit.total, []], [fit.background, [2, 3]]]) {
-      ctx.strokeStyle = '#172c3a'; ctx.lineWidth = 1.4; ctx.setLineDash(style); ctx.beginPath();
+      ctx.strokeStyle = TITLE; ctx.lineWidth = 1.4; ctx.setLineDash(style); ctx.beginPath();
       for (let i = 0; i <= 200; i++) {
         const value = region[0] + (region[1] - region[0]) * i / 200, py = y(part(value) * bins);
         if (i) ctx.lineTo(x(value), py); else ctx.moveTo(x(value), py);
@@ -159,7 +160,7 @@ function draw() {
   });
   if (drag && !drag.pan) {
     const {ctx} = spectrum, a = Math.min(drag.start, drag.now), b = Math.max(drag.start, drag.now);
-    ctx.fillStyle = picking ? 'rgba(212,123,53,.25)' : 'rgba(8,126,134,.14)'; ctx.fillRect(a, spectrum.pad.top, b - a, spectrum.h);
+    ctx.fillStyle = picking ? 'rgba(255,152,48,.25)' : 'rgba(87,148,242,.18)'; ctx.fillRect(a, spectrum.pad.top, b - a, spectrum.h);
   }
   const latest = Math.max(0, ...state.channels.map(row => row.history.length ? row.history[row.history.length - 1][0] : 0));
   const points = rows.flatMap(row => row.history.filter(point => point[0] >= latest - 120));
@@ -177,6 +178,22 @@ function draw() {
   }
 }
 
+// Grafana-style sparkline along the bottom of a stat panel.
+const temperatures = [];
+function sparkline(canvas, values, color) {
+  const box = canvas.getBoundingClientRect(), ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.round(box.width * ratio); canvas.height = Math.round(box.height * ratio);
+  const ctx = canvas.getContext('2d'); ctx.scale(ratio, ratio);
+  if (values.length < 2) return;
+  const low = Math.min(...values), high = Math.max(...values), span = high - low || 1;
+  const px = i => i / (values.length - 1) * box.width, py = v => box.height - 2 - (v - low) / span * (box.height - 6);
+  ctx.beginPath(); values.forEach((v, i) => i ? ctx.lineTo(px(i), py(v)) : ctx.moveTo(px(i), py(v)));
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.lineTo(box.width, box.height); ctx.lineTo(0, box.height); ctx.closePath();
+  const fill = ctx.createLinearGradient(0, 0, 0, box.height); fill.addColorStop(0, color + '55'); fill.addColorStop(1, color + '00');
+  ctx.fillStyle = fill; ctx.fill();
+}
+
 function render() {
   const rows = state.channels;
   const stale = state.age_s !== null && state.age_s > 3;
@@ -191,6 +208,18 @@ function render() {
   $('clipped').textContent = number(clipped);
   $('clipped-note').textContent = seen ? `${share.toFixed(share < 1 ? 2 : 1)} % of pulses reached the ADC limit` : 'Reached the ADC limit';
   $('clipped-card').classList.toggle('warn', share > 1);
+  $('clipped').className = `metric ${share > 1 ? 'bad' : share > 0 ? 'caution' : 'good'}`;
+  $('drops').className = `metric ${state.status.fifo_dropped_events > 0 ? 'caution' : 'good'}`;
+  $('updated').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+  const reading = state.status.temperature;
+  if (reading && reading.local_c != null) { temperatures.push(reading.local_c); if (temperatures.length > 240) temperatures.shift(); }
+  // Rate history arrives every 0.1 s; average in 2 s steps so the sparkline shows the trend.
+  const summed = [];
+  for (const row of rows) row.history.slice(-1200).forEach((point, i) => { summed[i] = (summed[i] || 0) + point[1]; });
+  const recent = [];
+  for (let i = 0; i + 20 <= summed.length; i += 20) recent.push(summed.slice(i, i + 20).reduce((a, v) => a + v, 0) / 20);
+  sparkline($('rate-spark'), recent, '#73bf69');
+  sparkline($('temperature-spark'), temperatures, '#ff9830');
   updateFits();
   $('drops').textContent = state.status.fifo_dropped_events == null ? '—' : number(state.status.fifo_dropped_events);
   const temperature = state.status.temperature;
@@ -342,14 +371,14 @@ function drawGain() {
   ctx.font = '11px -apple-system, sans-serif'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const sy = pad.top + h * (1 - i / 4);
-    ctx.strokeStyle = '#e9eff0'; ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + w, sy); ctx.stroke();
-    ctx.fillStyle = '#627580'; ctx.textAlign = 'right'; ctx.fillText((-spanY + 2 * spanY * i / 4).toFixed(2) + ' %', pad.left - 10, sy + 4);
+    ctx.strokeStyle = GRID; ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + w, sy); ctx.stroke();
+    ctx.fillStyle = TICK; ctx.textAlign = 'right'; ctx.fillText((-spanY + 2 * spanY * i / 4).toFixed(2) + ' %', pad.left - 10, sy + 4);
     if (temps.length) { ctx.textAlign = 'left'; ctx.fillText((tlo + (thi - tlo) * i / 4).toFixed(2) + ' °C', pad.left + w + 10, sy + 4); }
   }
   for (let i = 0; i <= 5; i++) { ctx.textAlign = 'center'; ctx.fillText(number(tmax * i / 5), x(tmax * i / 5), pad.top + h + 21); }
   axisTitles(ctx, pad, w, h, 'Elapsed time (s)', 'Peak centroid change (%)', temps.length ? 'Detector temperature (°C)' : null);
   if (temps.length) {
-    ctx.strokeStyle = '#8a98a0'; ctx.lineWidth = 1.5; ctx.beginPath(); let first = true;
+    ctx.strokeStyle = '#b877d9'; ctx.lineWidth = 1.5; ctx.beginPath(); let first = true;
     for (const p of series[0].points) { if (p.temp === null) continue; if (first) ctx.moveTo(x(p.t), yt(p.temp)); else ctx.lineTo(x(p.t), yt(p.temp)); first = false; }
     ctx.stroke();
   }
@@ -403,7 +432,7 @@ function canvasContext(canvas) {
   return {ctx, box};
 }
 function rotatedTitle(ctx, text, x, y, angle) {
-  ctx.save(); ctx.fillStyle = '#172c3a'; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.save(); ctx.fillStyle = TITLE; ctx.font = '12px -apple-system, sans-serif'; ctx.textAlign = 'center';
   ctx.translate(x, y); ctx.rotate(angle); ctx.fillText(text, 0, 0); ctx.restore();
 }
 function steps(ctx, values, place) {
@@ -422,10 +451,10 @@ function drawShape() {
   const marks = axisTicks(shape.low, shape.high);
   for (let i = 0; i <= 4; i++) {
     const sy = pad.top + h * (1 - i / 4);
-    ctx.strokeStyle = '#e9eff0'; ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + w, sy); ctx.stroke();
-    ctx.fillStyle = '#627580'; ctx.textAlign = 'right'; ctx.fillText((shape.ratio_low + yspan * i / 4).toFixed(3), pad.left - 10, sy + 4);
+    ctx.strokeStyle = GRID; ctx.beginPath(); ctx.moveTo(pad.left, sy); ctx.lineTo(pad.left + w, sy); ctx.stroke();
+    ctx.fillStyle = TICK; ctx.textAlign = 'right'; ctx.fillText((shape.ratio_low + yspan * i / 4).toFixed(3), pad.left - 10, sy + 4);
   }
-  for (const mark of marks) { const px = xOf(mark.x); ctx.fillStyle = '#627580'; ctx.textAlign = px > pad.left + w - 20 ? 'right' : 'center'; ctx.fillText(mark.label, px, pad.top + h + 18); }
+  for (const mark of marks) { const px = xOf(mark.x); ctx.fillStyle = TICK; ctx.textAlign = px > pad.left + w - 20 ? 'right' : 'center'; ctx.fillText(mark.label, px, pad.top + h + 18); }
   rotatedTitle(ctx, 'Short / long integral ratio', 14, pad.top + h / 2, -Math.PI / 2);
   const cw = w / shape.columns, ch = h / shape.rows, xbin = xspan / shape.columns, ybin = yspan / shape.rows;
   const inX = column => !gate || (shape.low + (column + .5) * xbin >= gate.x[0] && shape.low + (column + .5) * xbin < gate.x[1]);
@@ -449,11 +478,11 @@ function drawShape() {
   }
   ctx.globalAlpha = 1;
   if (gate) {
-    ctx.save(); ctx.strokeStyle = '#172c3a'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+    ctx.save(); ctx.strokeStyle = TITLE; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
     ctx.strokeRect(xOf(gate.x[0]), yOf(gate.y[1]), xOf(gate.x[1]) - xOf(gate.x[0]), yOf(gate.y[0]) - yOf(gate.y[1])); ctx.restore();
   }
   if (shapeDrag) {
-    ctx.fillStyle = 'rgba(8,126,134,.14)';
+    ctx.fillStyle = 'rgba(87,148,242,.18)';
     ctx.fillRect(Math.min(shapeDrag.x0, shapeDrag.x1), Math.min(shapeDrag.y0, shapeDrag.y1), Math.abs(shapeDrag.x1 - shapeDrag.x0), Math.abs(shapeDrag.y1 - shapeDrag.y0));
   }
   // Below: integral projection, aligned with the map's horizontal axis.
@@ -463,10 +492,10 @@ function drawShape() {
     const top = Math.max(1, ...projections.flatMap(r => r.across)) * 1.1;
     for (let i = 0; i <= 3; i++) {
       const sy = p.top + ph * (1 - i / 3);
-      c.strokeStyle = '#e9eff0'; c.beginPath(); c.moveTo(p.left, sy); c.lineTo(p.left + pw, sy); c.stroke();
-      c.fillStyle = '#627580'; c.textAlign = 'right'; c.fillText(number(top * i / 3), p.left - 10, sy + 4);
+      c.strokeStyle = GRID; c.beginPath(); c.moveTo(p.left, sy); c.lineTo(p.left + pw, sy); c.stroke();
+      c.fillStyle = TICK; c.textAlign = 'right'; c.fillText(number(top * i / 3), p.left - 10, sy + 4);
     }
-    for (const mark of marks) { const px = p.left + (mark.x - shape.low) / xspan * pw; c.fillStyle = '#627580'; c.textAlign = px > p.left + pw - 20 ? 'right' : 'center'; c.fillText(mark.label, px, p.top + ph + 21); }
+    for (const mark of marks) { const px = p.left + (mark.x - shape.low) / xspan * pw; c.fillStyle = TICK; c.textAlign = px > p.left + pw - 20 ? 'right' : 'center'; c.fillText(mark.label, px, p.top + ph + 21); }
     axisTitles(c, p, pw, ph, `${unit === UNITS.kev && axisCalibration() ? 'Energy (keV)' : `Long-gate integral (${unitName()})`}${gate ? ' · inside the gate\'s ratio range' : ''}`, 'Counts');
     for (const r of projections) {
       c.strokeStyle = colors[r.channel - 1]; c.lineWidth = 1.5;
@@ -480,8 +509,8 @@ function drawShape() {
     const top = Math.max(1, ...projections.flatMap(r => r.up)) * 1.1;
     for (let i = 0; i <= 2; i++) {
       const sx = p.left + pw * (1 - i / 2);
-      c.strokeStyle = '#e9eff0'; c.beginPath(); c.moveTo(sx, p.top); c.lineTo(sx, p.top + ph); c.stroke();
-      c.fillStyle = '#627580'; c.textAlign = 'center'; c.fillText(number(top * i / 2), sx, p.top + ph + 18);
+      c.strokeStyle = GRID; c.beginPath(); c.moveTo(sx, p.top); c.lineTo(sx, p.top + ph); c.stroke();
+      c.fillStyle = TICK; c.textAlign = 'center'; c.fillText(number(top * i / 2), sx, p.top + ph + 18);
     }
     rotatedTitle(c, gate ? 'Counts · inside the gate\'s integral range' : 'Counts', 12, p.top + ph / 2, -Math.PI / 2);
     for (const r of projections) {
